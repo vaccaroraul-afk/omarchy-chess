@@ -12,8 +12,31 @@ yay -S stockfish   # the engine; two-player games work without it
 omarchy plugin add https://github.com/vaccaroraul-afk/omarchy-chess.git --enable
 ```
 
+Open it from the knight in the bar, or bind a key to
+`omarchy-shell shell toggle raul.chess`.
+
 The UI is in Spanish, and moves are written with Spanish piece letters
 (R D T A C).
+
+## Remove
+
+```bash
+omarchy plugin remove raul.chess
+rm -f ~/.local/state/omarchy/chess.json   # the saved game, if you want it gone
+```
+
+The plugin writes nothing else and never touches your configuration beyond
+the bar entry that `omarchy plugin` adds and removes. Stockfish stays
+installed; `yay -R stockfish` removes it if nothing else uses it.
+
+## Dependencies
+
+- [Stockfish](https://stockfishchess.org/) on `PATH`, for games against the
+  computer (`yay -S stockfish`). Without it the board says so, and
+  two-player games still work.
+- Font Awesome 7 Free (`woff2-font-awesome`) for the pieces and the
+  JetBrainsMono Nerd Font for the bar icon. Both ship with Omarchy.
+- chess.js, vendored (see below).
 
 ## How it works
 
@@ -52,12 +75,6 @@ Click a piece then a square, or drag it. Keys: arrows or `hjkl` move the
 cursor, `Enter`/`Space` pick up and drop, `u` undo, `n` new game, `f` flip,
 `Esc` drops the selection and then closes. On promotion press `q r b n`
 (or `d t a c`, or `1`–`4`).
-
-Open it from anywhere with:
-
-```bash
-omarchy-shell shell toggle raul.chess
-```
 
 ## Levels
 
