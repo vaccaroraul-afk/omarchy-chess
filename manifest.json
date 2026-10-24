@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "raul.chess",
+  "name": "Ajedrez",
+  "version": "1.0.0",
+  "author": "Raúl Vaccaro",
+  "description": "Chess in a shell overlay: play Stockfish or a friend at the same keyboard. The game is kept between opens and saved to disk.",
+  "kinds": [
+    "panel",
+    "bar-widget"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "panel": "Panel.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Ajedrez",
+    "description": "Opens the chess board",
+    "category": "Games",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
