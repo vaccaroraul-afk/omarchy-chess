@@ -32,11 +32,103 @@ var LEVELS = [
 ]
 var DEFAULT_LEVEL = 3
 
-var DRAW_REASONS = {
-  stalemate: "por ahogado",
-  repetition: "por triple repetición",
-  material: "por material insuficiente",
-  fifty: "por la regla de los 50 movimientos"
+// UI text. The panel follows the system language (Qt's uiLanguages, so
+// LANGUAGE, LC_MESSAGES and LANG all count): Spanish for an es locale,
+// English otherwise. %1 is replaced by the argument.
+var STRINGS = {
+  en: {
+    white: "White",
+    black: "Black",
+    you: "You",
+    stockfishLevel: "Stockfish · level %1",
+    detailLocal: "Two players",
+    detailEngine: "Against Stockfish · you play %1",
+    yourMove: "Your move",
+    check: " · check",
+    thinking: "Stockfish is thinking…",
+    engineMissing: "Stockfish not found",
+    toMove: "%1 to move",
+    mateWon: "Checkmate. You win!",
+    mateLost: "Checkmate. Stockfish wins",
+    mateSide: "Checkmate. %1 wins",
+    draw: "Draw",
+    drawStalemate: "Draw by stalemate",
+    drawRepetition: "Draw by threefold repetition",
+    drawMaterial: "Draw by insufficient material",
+    drawFifty: "Draw by the fifty-move rule",
+    close: "Close",
+    installHint: "Stockfish not found. Install it with:\nyay -S stockfish",
+    engineCrashed: "Stockfish quit unexpectedly. Undo or start a new game to try again.",
+    undo: "Undo",
+    flip: "Flip board",
+    levelHeading: "STOCKFISH LEVEL",
+    newGameHeading: "NEW GAME",
+    modeEngine: "Against Stockfish",
+    modeLocal: "2 players",
+    random: "Random",
+    appliesNext: "Applies when you start a new game.",
+    newGame: "New game",
+    keysHelp: "Arrows or hjkl: cursor · Enter: move · U undo · N new · F flip · Esc close"
+  },
+  es: {
+    white: "Blancas",
+    black: "Negras",
+    you: "Tú",
+    stockfishLevel: "Stockfish · nivel %1",
+    detailLocal: "Dos jugadores",
+    detailEngine: "Contra Stockfish · juegas con %1",
+    yourMove: "Te toca",
+    check: " · jaque",
+    thinking: "Stockfish piensa…",
+    engineMissing: "Falta Stockfish",
+    toMove: "Juegan %1",
+    mateWon: "Jaque mate. ¡Ganaste!",
+    mateLost: "Jaque mate. Gana Stockfish",
+    mateSide: "Jaque mate. Ganan %1",
+    draw: "Tablas",
+    drawStalemate: "Tablas por ahogado",
+    drawRepetition: "Tablas por triple repetición",
+    drawMaterial: "Tablas por material insuficiente",
+    drawFifty: "Tablas por la regla de los 50 movimientos",
+    close: "Cerrar",
+    installHint: "No encontré Stockfish. Instálalo con:\nyay -S stockfish",
+    engineCrashed: "Stockfish se cerró de golpe. Deshaz o empieza una partida nueva para reintentar.",
+    undo: "Deshacer",
+    flip: "Girar tablero",
+    levelHeading: "NIVEL DE STOCKFISH",
+    newGameHeading: "NUEVA PARTIDA",
+    modeEngine: "Contra Stockfish",
+    modeLocal: "2 jugadores",
+    random: "Al azar",
+    appliesNext: "Se aplica al empezar una partida nueva.",
+    newGame: "Nueva partida",
+    keysHelp: "Flechas o hjkl: cursor · Enter: mover · U deshacer · N nueva · F girar · Esc cerrar"
+  }
+}
+
+var DRAW_KEYS = {
+  stalemate: "drawStalemate",
+  repetition: "drawRepetition",
+  material: "drawMaterial",
+  fifty: "drawFifty"
+}
+
+// The first supported language in the system's preference list (e.g.
+// ["de-DE", "es-ES"] → "es"), else English.
+function language(preferred) {
+  var list = preferred || []
+  for (var i = 0; i < list.length; i++) {
+    var code = String(list[i]).toLowerCase().split(/[-_.@]/)[0]
+    if (STRINGS.hasOwnProperty(code)) return code
+  }
+  return "en"
+}
+
+function text(lang, key, arg) {
+  var table = STRINGS.hasOwnProperty(lang) ? STRINGS[lang] : STRINGS.en
+  var value = table.hasOwnProperty(key) ? table[key]
+    : STRINGS.en.hasOwnProperty(key) ? STRINGS.en[key] : key
+  return arg === undefined ? value : value.replace("%1", arg)
 }
 
 function clampLevel(level) {
@@ -60,8 +152,8 @@ function opposite(color) {
   return color === "b" ? "w" : "b"
 }
 
-function colorName(color) {
-  return color === "b" ? "Negras" : "Blancas"
+function colorName(color, lang) {
+  return text(lang, color === "b" ? "black" : "white")
 }
 
 // View index 0..63 runs left to right, top to bottom; flipped puts black's
@@ -154,6 +246,11 @@ function spanishSan(san) {
   return String(san || "").replace(/[KQRBN]/g, function(letter) { return SPANISH_LETTERS[letter] })
 }
 
+// Spanish games are written with Spanish letters; English keeps plain SAN.
+function displaySan(san, lang) {
+  return lang === "es" ? spanishSan(san) : String(san || "")
+}
+
 function parseUci(text) {
   var match = /^([a-h][1-8])([a-h][1-8])([qrbn])?$/.exec(String(text || "").trim())
   if (!match) return null
@@ -181,24 +278,25 @@ function outcome(game) {
   return { over: false, winner: "", reason: "" }
 }
 
-// state: { outcome, turn, inCheck, mode, playerColor, engineMissing }
+// state: { outcome, turn, inCheck, mode, playerColor, engineMissing, lang }
 function statusText(state) {
+  var lang = state.lang
   var result = state.outcome || {}
   if (result.over) {
     if (result.reason === "checkmate") {
       if (state.mode === "engine")
-        return result.winner === state.playerColor ? "Jaque mate. ¡Ganaste!" : "Jaque mate. Gana Stockfish"
-      return "Jaque mate. Ganan " + colorName(result.winner)
+        return text(lang, result.winner === state.playerColor ? "mateWon" : "mateLost")
+      return text(lang, "mateSide", colorName(result.winner, lang))
     }
-    return "Tablas " + (DRAW_REASONS[result.reason] || "")
+    return text(lang, DRAW_KEYS[result.reason] || "draw")
   }
-  var check = state.inCheck ? " · jaque" : ""
+  var check = state.inCheck ? text(lang, "check") : ""
   if (state.mode === "engine") {
-    if (state.turn === state.playerColor) return "Te toca" + check
-    if (state.engineMissing) return "Falta Stockfish"
-    return "Stockfish piensa…" + check
+    if (state.turn === state.playerColor) return text(lang, "yourMove") + check
+    if (state.engineMissing) return text(lang, "engineMissing")
+    return text(lang, "thinking") + check
   }
-  return "Juegan " + colorName(state.turn) + check
+  return text(lang, "toMove", colorName(state.turn, lang)) + check
 }
 
 function normalizeChoice(value, options, fallback) {

@@ -72,9 +72,11 @@ Item {
     && (nextMode !== mode || (nextMode === "engine" && nextColor !== colorChoice))
   readonly property string topColor: flipped ? "w" : "b"
   readonly property string bottomColor: flipped ? "b" : "w"
+  // "es" or "en", from the system's language preferences.
+  readonly property string lang: Model.language(Qt.locale().uiLanguages)
   readonly property string statusLine: Model.statusText({
     outcome: result, turn: turn, inCheck: inCheck, mode: mode,
-    playerColor: playerColor, engineMissing: engine.missing
+    playerColor: playerColor, engineMissing: engine.missing, lang: lang
   })
   readonly property string statePath: Quickshell.env("HOME") + "/.local/state/omarchy/chess.json"
 
@@ -381,9 +383,13 @@ Item {
 
   // ---------------------------------------------------------------- text
 
+  function tr(key, arg) {
+    return Model.text(lang, key, arg)
+  }
+
   function playerName(side) {
-    if (!engineGame) return Model.colorName(side)
-    return side === playerColor ? "Tú" : "Stockfish · nivel " + level
+    if (!engineGame) return Model.colorName(side, lang)
+    return side === playerColor ? tr("you") : tr("stockfishLevel", level)
   }
 
   function takenGlyphs(side) {
@@ -396,8 +402,8 @@ Item {
   }
 
   function detailLine() {
-    if (!engineGame) return "Dos jugadores"
-    return "Contra Stockfish · juegas con " + Model.colorName(playerColor).toLowerCase()
+    if (!engineGame) return tr("detailLocal")
+    return tr("detailEngine", Model.colorName(playerColor, lang).toLowerCase())
   }
 
   // -------------------------------------------------------------- plumbing
@@ -615,7 +621,7 @@ Item {
               }
 
               Button {
-                text: "Cerrar"
+                text: root.tr("close")
                 fontSize: Style.font.bodySmall
                 onClicked: root.dismiss()
               }
@@ -643,9 +649,7 @@ Item {
             Text {
               Layout.fillWidth: true
               visible: root.engineGame && (engine.missing || engine.crashed)
-              text: engine.missing
-                ? "No encontré Stockfish. Instálalo con:\nyay -S stockfish"
-                : "Stockfish se cerró de golpe. Deshaz o empieza una partida nueva para reintentar."
+              text: root.tr(engine.missing ? "installHint" : "engineCrashed")
               color: Color.urgent
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -680,7 +684,7 @@ Item {
 
                 Text {
                   width: Style.space(84)
-                  text: Model.spanishSan(pair.modelData.white)
+                  text: Model.displaySan(pair.modelData.white, root.lang)
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -689,7 +693,7 @@ Item {
 
                 Text {
                   width: Style.space(84)
-                  text: Model.spanishSan(pair.modelData.black)
+                  text: Model.displaySan(pair.modelData.black, root.lang)
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -703,7 +707,7 @@ Item {
               spacing: Style.spacing.md
 
               Button {
-                text: "Deshacer"
+                text: root.tr("undo")
                 bordered: true
                 enabled: root.canUndo
                 opacity: enabled ? 1 : 0.4
@@ -712,7 +716,7 @@ Item {
               }
 
               Button {
-                text: "Girar tablero"
+                text: root.tr("flip")
                 bordered: true
                 fontSize: Style.font.bodySmall
                 onClicked: root.flip()
@@ -727,7 +731,7 @@ Item {
 
             Text {
               visible: root.engineGame || root.nextMode === "engine"
-              text: "NIVEL DE STOCKFISH"
+              text: root.tr("levelHeading")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -745,7 +749,7 @@ Item {
             }
 
             Text {
-              text: "NUEVA PARTIDA"
+              text: root.tr("newGameHeading")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -757,8 +761,8 @@ Item {
               focusable: false
               fontSize: Style.font.bodySmall
               options: [
-                { value: "engine", label: "Contra Stockfish" },
-                { value: "local", label: "2 jugadores" }
+                { value: "engine", label: root.tr("modeEngine") },
+                { value: "local", label: root.tr("modeLocal") }
               ]
               value: root.nextMode
               onChanged: function(value) { root.setNextMode(value) }
@@ -769,9 +773,9 @@ Item {
               focusable: false
               fontSize: Style.font.bodySmall
               options: [
-                { value: "w", label: "Blancas" },
-                { value: "b", label: "Negras" },
-                { value: "random", label: "Al azar" }
+                { value: "w", label: Model.colorName("w", root.lang) },
+                { value: "b", label: Model.colorName("b", root.lang) },
+                { value: "random", label: root.tr("random") }
               ]
               value: root.nextColor
               onChanged: function(value) { root.setNextColor(value) }
@@ -780,7 +784,7 @@ Item {
             Text {
               Layout.fillWidth: true
               visible: root.settingsPending
-              text: "Se aplica al empezar una partida nueva."
+              text: root.tr("appliesNext")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -789,7 +793,7 @@ Item {
 
             Button {
               Layout.fillWidth: true
-              text: "Nueva partida"
+              text: root.tr("newGame")
               bordered: true
               selected: root.settingsPending || root.result.over
               onClicked: root.newGame()
@@ -797,7 +801,7 @@ Item {
 
             Text {
               Layout.fillWidth: true
-              text: "Flechas o hjkl: cursor · Enter: mover · U deshacer · N nueva · F girar · Esc cerrar"
+              text: root.tr("keysHelp")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption

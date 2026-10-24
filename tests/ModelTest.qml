@@ -60,12 +60,17 @@ QtObject {
     var mate = play(new ChessLib.Chess(), ["f3", "e5", "g4", "Qh4#"])
     var result = Model.outcome(mate)
     expect("mate", result, { over: true, winner: "b", reason: "checkmate" })
-    expect("mate local", Model.statusText({ outcome: result, mode: "local" }), "Jaque mate. Ganan Negras")
-    expect("mate lost", Model.statusText({ outcome: result, mode: "engine", playerColor: "w" }), "Jaque mate. Gana Stockfish")
+    expect("mate local", Model.statusText({ outcome: result, mode: "local", lang: "es" }), "Jaque mate. Ganan Negras")
+    expect("mate lost", Model.statusText({ outcome: result, mode: "engine", playerColor: "w", lang: "es" }), "Jaque mate. Gana Stockfish")
+    expect("mate local en", Model.statusText({ outcome: result, mode: "local", lang: "en" }), "Checkmate. Black wins")
     expect("stalemate", Model.outcome(new ChessLib.Chess("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1")).reason, "stalemate")
     expect("bare kings", Model.outcome(new ChessLib.Chess("8/8/4k3/8/8/4K3/8/8 w - - 0 1")).reason, "material")
-    expect("your turn", Model.statusText({ outcome: { over: false }, mode: "engine", turn: "w", playerColor: "w", inCheck: true }), "Te toca · jaque")
-    expect("missing", Model.statusText({ outcome: { over: false }, mode: "engine", turn: "b", playerColor: "w", engineMissing: true }), "Falta Stockfish")
+    expect("draw", Model.statusText({ outcome: { over: true, reason: "stalemate" }, lang: "es" }), "Tablas por ahogado")
+    expect("draw en", Model.statusText({ outcome: { over: true, reason: "fifty" }, lang: "en" }), "Draw by the fifty-move rule")
+    expect("your turn", Model.statusText({ outcome: { over: false }, mode: "engine", turn: "w", playerColor: "w", inCheck: true, lang: "es" }), "Te toca · jaque")
+    expect("your turn en", Model.statusText({ outcome: { over: false }, mode: "engine", turn: "w", playerColor: "w", inCheck: true, lang: "en" }), "Your move · check")
+    expect("missing", Model.statusText({ outcome: { over: false }, mode: "engine", turn: "b", playerColor: "w", engineMissing: true, lang: "es" }), "Falta Stockfish")
+    expect("local turn en", Model.statusText({ outcome: { over: false }, mode: "local", turn: "w" }), "White to move")
 
     // Saved state.
     var state = Model.parseState('{"mode":"local","level":42,"nextColor":"x","moves":["e2e4","junk","e7e5"]}')
@@ -79,6 +84,27 @@ QtObject {
     expect("spanish san", Model.spanishSan("Nxe5+"), "Cxe5+")
     expect("spanish promo", Model.spanishSan("exd8=Q#"), "exd8=D#")
     expect("castle", Model.spanishSan("O-O-O"), "O-O-O")
+    expect("display san es", Model.displaySan("Qxf7#", "es"), "Dxf7#")
+    expect("display san en", Model.displaySan("Qxf7#", "en"), "Qxf7#")
+
+    // Language: the first supported entry of Qt's uiLanguages, else English.
+    expect("lang es", Model.language(["es-Latn-AR", "es-AR", "es-Latn", "es"]), "es")
+    expect("lang en", Model.language(["en-Latn-US", "en-US", "en-Latn", "en"]), "en")
+    expect("lang fallback list", Model.language(["de-DE", "de", "es-ES", "es"]), "es")
+    expect("lang unsupported", Model.language(["fr-FR", "fr"]), "en")
+    expect("lang C", Model.language(["C"]), "en")
+    expect("lang empty", Model.language([]), "en")
+    expect("text arg", Model.text("es", "stockfishLevel", 3), "Stockfish · nivel 3")
+    expect("text unknown lang", Model.text("fr", "undo"), "Undo")
+    var missing = []
+    for (var lang in Model.STRINGS) {
+      for (var other in Model.STRINGS) {
+        for (var key in Model.STRINGS[other]) {
+          if (!Model.STRINGS[lang].hasOwnProperty(key)) missing.push(lang + "." + key)
+        }
+      }
+    }
+    expect("strings complete", missing, [])
     expect("promo key", Model.promotionKey("C"), "n")
     expect("pairs", Model.movePairs(["e4", "e5", "Nf3"]), [{ number: 1, white: "e4", black: "e5" }, { number: 2, white: "Nf3", black: "" }])
 

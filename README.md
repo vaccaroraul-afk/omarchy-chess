@@ -15,8 +15,9 @@ omarchy plugin add https://github.com/vaccaroraul-afk/omarchy-chess.git --enable
 Open it from the knight in the bar, or bind a key to
 `omarchy-shell shell toggle raul.chess`.
 
-The UI is in Spanish, and moves are written with Spanish piece letters
-(R D T A C).
+The UI follows the system language: Spanish when the locale is Spanish
+(`LANGUAGE`, `LC_MESSAGES` or `LANG` set to `es_*`), English otherwise. In
+Spanish, moves are written with Spanish piece letters (R D T A C).
 
 ## Remove
 
